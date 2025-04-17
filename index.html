@@ -36,7 +36,7 @@
         try {
           const result = await card.tokenize();
           if (result.status === 'OK') {
-            window.ReactNativeWebView?.postMessage(result.token);
+            window.ReactNativeWebView?.postMessage(JSON.stringify({ sourceId: result.token }));
           } else {
             document.getElementById('status').innerText = result.errors?.[0]?.message || 'Payment failed';
           }
