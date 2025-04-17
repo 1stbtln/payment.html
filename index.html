@@ -2,46 +2,50 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Payment</title>
   <script type="text/javascript" src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
   <style>
-    body { font-family: sans-serif; padding: 1rem; background: #f6f6f6; }
-    #card-container { margin-top: 20px; }
-    #submit-button { margin-top: 20px; width: 100%; padding: 12px; font-size: 16px; background: black; color: white; border: none; border-radius: 6px; }
-    #status { margin-top: 10px; color: red; font-size: 14px; }
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    #card-container {
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+    #pay-button {
+      background: black;
+      color: white;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      width: 100%;
+    }
   </style>
 </head>
 <body>
-  <h2>Enter Payment Info</h2>
+  <h3>Enter Payment Info</h3>
   <div id="card-container"></div>
-  <button id="submit-button">Pay</button>
-  <div id="status"></div>
+  <button id="pay-button">Pay</button>
 
   <script>
     async function main() {
-      const appId = 'sq0idp-MxctQ0AUlqhwNNx1Icvfhw';
-      const locationId = 'L3D90HN4FDZED';
-
-      if (!window.Square) {
-        document.getElementById('status').innerText = 'Square JS failed to load';
-        return;
-      }
-
-      const payments = window.Square.payments(appId, locationId);
+      const payments = Square.payments("sq0idp-MxctQ0AUlqhwNNx1Icvfhw", "L3D90HN4FDZED");
       const card = await payments.card();
-      await card.attach('#card-container');
+      await card.attach("#card-container");
 
-      document.getElementById('submit-button').addEventListener('click', async () => {
+      document.getElementById("pay-button").addEventListener("click", async function () {
         try {
           const result = await card.tokenize();
-          if (result.status === 'OK') {
-            window.ReactNativeWebView?.postMessage(JSON.stringify({ sourceId: result.token }));
+          if (result.status === "OK") {
+            const payload = JSON.stringify({ sourceId: result.token });
+            window.ReactNativeWebView?.postMessage(payload);
           } else {
-            document.getElementById('status').innerText = result.errors?.[0]?.message || 'Payment failed';
+            alert("Payment failed to tokenize: " + result.errors[0]?.message);
           }
-        } catch (e) {
-          document.getElementById('status').innerText = 'Tokenization error';
+        } catch (err) {
+          alert("Error: " + err.message);
         }
       });
     }
