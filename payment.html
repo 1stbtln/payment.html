@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payment</title>
+  <script type="text/javascript" src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 1rem; background: #f6f6f6; }
+    #card-container { margin-top: 20px; }
+    #submit-button { margin-top: 20px; width: 100%; padding: 12px; font-size: 16px; background: black; color: white; border: none; border-radius: 6px; }
+    #status { margin-top: 10px; color: red; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h2>Enter Payment Info</h2>
+  <div id="card-container"></div>
+  <button id="submit-button">Pay</button>
+  <div id="status"></div>
+
+  <script>
+    async function main() {
+      const appId = 'sq0idp-MxctQ0AUlqhwNNx1Icvfhw';
+      const locationId = 'L3D90HN4FDZED';
+
+      if (!window.Square) {
+        document.getElementById('status').innerText = 'Square JS failed to load';
+        return;
+      }
+
+      const payments = window.Square.payments(appId, locationId);
+      const card = await payments.card();
+      await card.attach('#card-container');
+
+      document.getElementById('submit-button').addEventListener('click', async () => {
+        try {
+          const result = await card.tokenize();
+          if (result.status === 'OK') {
+            window.ReactNativeWebView?.postMessage(result.token);
+          } else {
+            document.getElementById('status').innerText = result.errors?.[0]?.message || 'Payment failed';
+          }
+        } catch (e) {
+          document.getElementById('status').innerText = 'Tokenization error';
+        }
+      });
+    }
+    main();
+  </script>
+</body>
+</html>
