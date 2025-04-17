@@ -9,18 +9,26 @@
     body {
       font-family: sans-serif;
       padding: 20px;
+      background-color: #fff;
     }
     #card-container {
       margin-top: 10px;
-      margin-bottom: 10px;
+      margin-bottom: 16px;
     }
     #pay-button {
-      background: black;
-      color: white;
-      padding: 10px 20px;
+      background: #000;
+      color: #fff;
       font-size: 16px;
-      border: none;
+      padding: 12px;
       width: 100%;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    #status {
+      margin-top: 12px;
+      color: red;
+      font-size: 14px;
     }
   </style>
 </head>
@@ -28,28 +36,35 @@
   <h3>Enter Payment Info</h3>
   <div id="card-container"></div>
   <button id="pay-button">Pay</button>
+  <div id="status"></div>
 
   <script>
-    async function main() {
-      const payments = Square.payments("sq0idp-MxctQ0AUlqhwNNx1Icvfhw", "L3D90HN4FDZED");
-      const card = await payments.card();
-      await card.attach("#card-container");
+    async function initializeSquare() {
+      try {
+        const payments = Square.payments(
+          "sq0idp-MxctQ0AUlqhwNNx1Icvfhw",
+          "L3D90HN4FDZED"
+        );
+        const card = await payments.card();
+        await card.attach("#card-container");
 
-      document.getElementById("pay-button").addEventListener("click", async function () {
-        try {
+        document.getElementById("pay-button").addEventListener("click", async () => {
           const result = await card.tokenize();
           if (result.status === "OK") {
             const payload = JSON.stringify({ sourceId: result.token });
             window.ReactNativeWebView?.postMessage(payload);
+            document.getElementById("status").innerText = "Card submitted!";
           } else {
-            alert("Payment failed to tokenize: " + result.errors[0]?.message);
+            const errorMsg = result.errors?.[0]?.message || "Tokenization failed.";
+            document.getElementById("status").innerText = errorMsg;
           }
-        } catch (err) {
-          alert("Error: " + err.message);
-        }
-      });
+        });
+      } catch (error) {
+        document.getElementById("status").innerText = "Initialization error: " + error.message;
+      }
     }
-    main();
+
+    initializeSquare();
   </script>
 </body>
 </html>
