@@ -14,15 +14,22 @@
     }
     
     body {
-      padding: 0;
+      padding: 10px;
       background: #f9f9f9;
       color: #333;
       font-size: 16px;
       line-height: 1.4;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
     
     .container {
       width: 100%;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding-bottom: 60px;
     }
     
     .card-form-header {
@@ -88,16 +95,26 @@
       color: #b30000;
     }
     
+    .button-container {
+      margin-top: auto;
+      width: 100%;
+      position: fixed;
+      bottom: 10px;
+      left: 0;
+      padding: 0 10px;
+      z-index: 100;
+    }
+    
     #submit-button {
       width: 100%;
-      padding: 14px 16px;
+      padding: 16px;
       font-size: 18px;
       font-weight: 600;
       color: white;
       border: none;
       border-radius: 8px;
       background: linear-gradient(to right, #ff4500, #b30000);
-      box-shadow: 0 2px 5px rgba(179, 0, 0, 0.2);
+      box-shadow: 0 2px 8px rgba(179, 0, 0, 0.3);
       cursor: pointer;
       transition: transform 0.15s ease, box-shadow 0.15s ease;
       display: flex;
@@ -122,6 +139,7 @@
     
     #status {
       margin-top: 10px;
+      margin-bottom: 70px;
       padding: 10px;
       border-radius: 6px;
       color: #d32f2f;
@@ -133,6 +151,13 @@
     
     #status.visible {
       display: block;
+    }
+    
+    .debug-info {
+      color: #666;
+      font-size: 12px;
+      text-align: center;
+      margin-top: 5px;
     }
     
     .payment-logo {
@@ -162,7 +187,7 @@
     @media (max-width: 400px) {
       #submit-button {
         font-size: 16px;
-        padding: 12px;
+        padding: 14px;
       }
     }
   </style>
@@ -171,6 +196,9 @@
   <div class="container">
     <div class="card-form-header">
       <div class="secure-badge">
+        <div class="secure-icon">✓</div>
+        <span>Secure Payment</span>
+      </div>
     </div>
     
     <div id="card-container" class="card-container"></div>
@@ -180,12 +208,15 @@
       <span id="total-amount">$0.00</span>
     </div>
     
+    <div id="status"></div>
+    <p id="debug-info" class="debug-info"></p>
+  </div>
+  
+  <div class="button-container">
     <button id="submit-button" disabled>
       <div class="spinner" id="spinner" style="display:none;"></div>
       <span id="button-text">Pay</span>
     </button>
-    
-    <div id="status"></div>
   </div>
 
   <script>
@@ -197,11 +228,17 @@
       const spinner = document.getElementById('spinner');
       const buttonText = document.getElementById('button-text');
       const cardContainer = document.getElementById('card-container');
+      const debugInfo = document.getElementById('debug-info');
+      
+      // Log setup information
+      debugInfo.textContent = "Square SDK loading...";
       
       if (!window.Square) {
         showError('Square payment SDK failed to load');
         return;
       }
+      
+      debugInfo.textContent = "Square SDK loaded";
       
       function showError(message) {
         statusDiv.textContent = message;
@@ -220,15 +257,19 @@
       }
       
       try {
+        debugInfo.textContent = "Initializing Square payments...";
         // Initialize Square payments with explicit production environment
         const payments = window.Square.payments(appId, locationId, {
           environment: 'production'
         });
         
+        debugInfo.textContent = "Creating card element...";
         const card = await payments.card();
         
+        debugInfo.textContent = "Attaching card element...";
         await card.attach('#card-container');
         
+        debugInfo.textContent = "Card element ready";
         submitButton.disabled = false;
         
         const totalAmount = document.getElementById('total-amount').textContent;
@@ -237,13 +278,16 @@
         card.addEventListener('change', event => {
           if (event.complete) {
             cardContainer.classList.remove('invalid');
+            debugInfo.textContent = "Card information complete";
           } else if (event.error) {
             cardContainer.classList.add('invalid');
+            debugInfo.textContent = `Card error: ${event.error.message}`;
           }
         });
         
         submitButton.addEventListener('click', async () => {
           try {
+            debugInfo.textContent = "Processing payment...";
             submitButton.disabled = true;
             spinner.style.display = 'inline-block';
             buttonText.textContent = 'Processing...';
@@ -252,6 +296,7 @@
             const result = await card.tokenize();
             
             if (result.status === 'OK') {
+              debugInfo.textContent = "Payment tokenized successfully";
               window.ReactNativeWebView?.postMessage(JSON.stringify({
                 type: 'paymentSuccess',
                 sourceId: result.token
@@ -261,11 +306,13 @@
             }
           } catch (e) {
             console.error('Payment error:', e);
+            debugInfo.textContent = `Payment error: ${e.message}`;
             showError('There was a problem processing your payment');
           }
         });
       } catch (e) {
         console.error('Square initialization error:', e);
+        debugInfo.textContent = `Init error: ${e.message}`;
         showError('Could not initialize payment system');
       }
     }
