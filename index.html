@@ -268,7 +268,6 @@
         debugInfo.textContent = "Creating card element...";
         const card = await payments.card();
         
-        debugInfo.textContent = "Attaching card element...";
         await card.attach('#card-container');
         
         submitButton.disabled = false;
