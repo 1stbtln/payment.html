@@ -298,7 +298,6 @@
             const result = await card.tokenize();
             
             if (result.status === 'OK') {
-              debugInfo.textContent = "Payment tokenized successfully";
               window.ReactNativeWebView?.postMessage(JSON.stringify({
                 type: 'paymentSuccess',
                 sourceId: result.token
