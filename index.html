@@ -265,7 +265,6 @@
           environment: 'production'
         });
         
-        debugInfo.textContent = "Creating card element...";
         const card = await payments.card();
         
         await card.attach('#card-container');
