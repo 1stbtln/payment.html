@@ -259,8 +259,6 @@
       }
       
       try {
-        debugInfo.textContent = "Initializing Square payments...";
-        // Initialize Square payments with explicit production environment
         const payments = window.Square.payments(appId, locationId, {
           environment: 'production'
         });
