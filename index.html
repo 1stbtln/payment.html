@@ -61,10 +61,50 @@
     button:hover {
       background-color: #a00000;
     }
-    
-    button:disabled {
+      button:disabled {
       background-color: #ccc;
       cursor: not-allowed;
+    }    /* Hide Square security text and branding above card inputs */
+    .sq-security-text,
+    .sq-secure-text,
+    .sq-powered-by,
+    .sq-branding,
+    .sq-security-badge,
+    [class*="security"],
+    [class*="secure"],
+    [class*="powered"],
+    [id*="security"],
+    [id*="secure"],
+    [id*="powered"] {
+      display: none !important;
+    }
+
+    /* Hide any elements containing security-related text */
+    div:has-text("secure"),
+    div:has-text("Secure"),
+    div:has-text("powered by"),
+    div:has-text("Powered by"),
+    span:has-text("secure"),
+    span:has-text("Secure"),
+    span:has-text("powered by"),
+    span:has-text("Powered by") {
+      display: none !important;
+    }
+
+    /* Additional Square element hiding */
+    iframe[src*="secure"],
+    iframe[src*="powered"],
+    .sq-wallet-divider,
+    .sq-wallet-header,
+    .sq-payment-form-header,
+    [data-testid*="security"],
+    [data-testid*="secure"] {
+      display: none !important;
+    }
+
+    /* Hide any text nodes that might contain security messaging */
+    .container > *:not(#payment-form) {
+      display: none !important;
     }
   </style>
 </head>
@@ -141,19 +181,21 @@
             button.disabled = false;
             button.textContent = 'Pay Now';
           }
-        }
-
-        document.getElementById('sq-creditcard').addEventListener('click', async (event) => {
+        }        document.getElementById('sq-creditcard').addEventListener('click', async (event) => {
           await handlePaymentMethodSubmission(event, card);
         });
+
+        // Remove security text after Square elements are loaded
+        setTimeout(() => {
+          removeSecurityText();
+        }, 100);
 
         postMessage({type: 'loaded'});
         
       } catch (error) {
         console.error('Failed to initialize card:', error);
         postMessage({type: 'error', message: 'Failed to load payment form'});
-      }
-    }    function postMessage(data) {
+      }    }    function postMessage(data) {
       if (window.ReactNativeWebView) {
         window.ReactNativeWebView.postMessage(JSON.stringify(data));
       } else {
@@ -161,7 +203,74 @@
       }
     }
 
-    document.addEventListener('DOMContentLoaded', initializeCard);
+    // Function to remove Square security text
+    function removeSecurityText() {
+      // Remove elements with security-related text content
+      const allElements = document.querySelectorAll('*');
+      allElements.forEach(element => {
+        const text = element.textContent?.toLowerCase() || '';
+        if (
+          text.includes('secure payment') ||
+          text.includes('powered by square') ||
+          text.includes('secure') && text.includes('payment') ||
+          text.includes('ssl') && text.includes('secure') ||
+          text.includes('256-bit encryption') ||
+          text.includes('pci compliant')
+        ) {
+          // Only hide if it's not our pay button or essential form elements
+          if (!element.id?.includes('sq-creditcard') && 
+              !element.closest('#payment-form') === document.getElementById('payment-form')) {
+            element.style.display = 'none';
+          }
+        }
+      });
+
+      // Remove common Square security elements by class/id patterns
+      const securitySelectors = [
+        '[class*="security"]',
+        '[class*="secure"]', 
+        '[class*="powered"]',
+        '[id*="security"]',
+        '[id*="secure"]',
+        '[id*="powered"]',
+        '.sq-security-text',
+        '.sq-secure-text',
+        '.sq-powered-by',
+        '.sq-branding'
+      ];
+
+      securitySelectors.forEach(selector => {
+        document.querySelectorAll(selector).forEach(el => {
+          if (!el.closest('#payment-form')) {
+            el.style.display = 'none';
+          }
+        });
+      });
+    }
+
+    // Run security text removal periodically to catch dynamically added content
+    function startSecurityTextRemoval() {
+      removeSecurityText();
+      
+      // Set up a mutation observer to watch for new elements
+      const observer = new MutationObserver(() => {
+        removeSecurityText();
+      });
+      
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true
+      });
+
+      // Also run periodically as fallback
+      setInterval(removeSecurityText, 1000);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initializeCard();
+      startSecurityTextRemoval();
+    });
   </script>
 </body>
 </html>
