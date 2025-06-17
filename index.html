@@ -25,6 +25,10 @@
       width: 100%;
     }
     
+    .card-container {
+      margin-bottom: 12px;
+    }
+    
     .form-row {
       margin-bottom: 12px;
     }
@@ -45,125 +49,9 @@
       box-shadow: 0 0 0 2px rgba(179, 0, 0, 0.1);
     }
     
-    button {
-      width: 100%;
-      height: 48px;
-      background-color: #b30000;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: 600;
-      margin-top: 16px;
-      cursor: pointer;
+    .card-container.invalid {
+      border-color: #d32f2f;
     }
-    
-    button:hover {
-      background-color: #a00000;
-    }
-    
-    button:disabled {
-      background-color: #ccc;
-      cursor: not-allowed;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <form id="payment-form">
-      <div class="form-row">
-        <div id="sq-card-number"></div>
-      </div>
-      <div class="form-row">
-        <div id="sq-expiration-date"></div>
-      </div>
-      <div class="form-row">
-        <div id="sq-cvv"></div>
-      </div>
-      <div class="form-row">
-        <div id="sq-postal-code"></div>
-      </div>
-      <button type="button" id="sq-creditcard">Pay Now</button>
-    </form>
-  </div>  <script>
-    async function initializeCard() {
-      if (!window.Square) {
-        throw new Error('Square.js failed to load properly');
-      }
-
-      let payments;
-      try {
-        payments = window.Square.payments('sq0idp-MxctQ0AUlqhwNNx1Icvfhw', 'L3D90HN4FDZED');
-      } catch (error) {
-        console.error('Failed to initialize Square payments:', error);
-        postMessage({type: 'error', message: 'Failed to initialize payment system'});
-        return;
-      }
-
-      try {
-        const card = await payments.card();
-        await card.attach('#sq-card-number');
-        
-        const expirationDate = await payments.card({
-          style: {
-            input: {
-              fontSize: '16px'
-            }
-          }
-        });
-        await expirationDate.attach('#sq-expiration-date');
-        
-        const cvv = await payments.card();
-        await cvv.attach('#sq-cvv');
-        
-        const postalCode = await payments.card();
-        await postalCode.attach('#sq-postal-code');
-
-        async function handlePaymentMethodSubmission(event, card) {
-          event.preventDefault();
-          
-          const button = document.getElementById('sq-creditcard');
-          button.disabled = true;
-          button.textContent = 'Processing...';
-          
-          try {
-            const result = await card.tokenize();
-            if (result.status === 'OK') {
-              postMessage({type: 'paymentSuccess', sourceId: result.token});
-            } else {
-              console.error('Tokenization errors:', result.errors);
-              postMessage({type: 'error', message: 'Payment failed. Please check your card details.'});
-            }
-          } catch (error) {
-            console.error('Payment error:', error);
-            postMessage({type: 'error', message: 'Payment processing failed'});
-          } finally {
-            button.disabled = false;
-            button.textContent = 'Pay Now';
-          }
-        }
-
-        document.getElementById('sq-creditcard').addEventListener('click', async (event) => {
-          await handlePaymentMethodSubmission(event, card);
-        });
-
-        postMessage({type: 'loaded'});
-        
-      } catch (error) {
-        console.error('Failed to initialize card:', error);
-        postMessage({type: 'error', message: 'Failed to load payment form'});
-      }
-    }
-
-    function postMessage(data) {
-      if (window.ReactNativeWebView) {
-        window.ReactNativeWebView.postMessage(JSON.stringify(data));
-      } else {
-        console.log('Message would be sent:', data);
-      }
-    }    document.addEventListener('DOMContentLoaded', initializeCard);
-  </script>
-</body>
     
     .button-container {
       margin-top: auto;
@@ -174,7 +62,8 @@
       padding: 0 10px;
       z-index: 100;
     }
-      #submit-button {
+    
+    #submit-button {
       width: 100%;
       padding: 16px;
       font-size: 16px;
@@ -189,19 +78,22 @@
       justify-content: center;
       align-items: center;
     }
-      #submit-button:hover {
+    
+    #submit-button:hover {
       opacity: 0.9;
     }
     
     #submit-button:active {
       opacity: 0.8;
     }
-      #submit-button:disabled {
+    
+    #submit-button:disabled {
       opacity: 0.6;
       background: #999;
       cursor: not-allowed;
     }
-      #status {
+    
+    #status {
       margin-top: 10px;
       margin-bottom: 70px;
       padding: 10px;
@@ -240,7 +132,8 @@
     }
   </style>
 </head>
-<body>  <div class="container">
+<body>
+  <div class="container">
     <div id="card-container" class="card-container"></div>
     <div id="status"></div>
   </div>
@@ -255,17 +148,21 @@
   <script>
     async function main() {
       const appId = 'sq0idp-MxctQ0AUlqhwNNx1Icvfhw';
-      const locationId = 'L3D90HN4FDZED';      const submitButton = document.getElementById('submit-button');
+      const locationId = 'L3D90HN4FDZED';
+      
+      const submitButton = document.getElementById('submit-button');
       const statusDiv = document.getElementById('status');
       const spinner = document.getElementById('spinner');
       const buttonText = document.getElementById('button-text');
       const cardContainer = document.getElementById('card-container');
-            
+      
+      console.log('Initializing Square.payments with', appId, locationId);
+      
       if (!window.Square) {
         showError('Square payment SDK failed to load');
         return;
       }
-            
+      
       function showError(message) {
         statusDiv.textContent = message;
         statusDiv.classList.add('visible');
@@ -283,16 +180,23 @@
       }
       
       try {
-        const payments = window.Square.payments(appId, locationId, {
-          environment: 'production'
-        });
+        const payments = window.Square.payments(appId, locationId);
         
-        const card = await payments.card();
+        // Style overrides to hide Square's default messages
+        const styleOverrides = {
+          '.message-text': { display: 'none' },
+          '.message-icon': { display: 'none' },
+          input: {
+            fontSize: '16px'
+          }
+        };
+        
+        const card = await payments.card({ style: styleOverrides });
         
         await card.attach('#card-container');
         
         submitButton.disabled = false;
-          const totalAmount = document.getElementById('total-amount')?.textContent || '$0.00';
+        const totalAmount = document.getElementById('total-amount')?.textContent || '$0.00';
         buttonText.textContent = `Pay ${totalAmount}`;
         
         card.addEventListener('change', event => {
@@ -322,18 +226,24 @@
             }
           } catch (e) {
             console.error('Payment error:', e);
-            debugInfo.textContent = `Payment error: ${e.message}`;
             showError('There was a problem processing your payment');
           }
         });
+        
+        // Notify React Native that the payment form is ready
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: 'loaded'
+          }));
+        }
+        
       } catch (e) {
         console.error('Square initialization error:', e);
-        debugInfo.textContent = `Init error: ${e.message}`;
         showError('Could not initialize payment system');
       }
     }
     
-    main();
+    document.addEventListener('DOMContentLoaded', main);
   </script>
 </body>
 </html>
