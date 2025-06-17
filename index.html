@@ -197,9 +197,18 @@
 <body>
   <div class="container">
     <div class="card-form-header">
+      <div class="secure-badge">
+        <div class="secure-icon">✓</div>
+        <span>Secure Payment</span>
+      </div>
     </div>
     
     <div id="card-container" class="card-container"></div>
+    
+    <div class="total-amount-container">
+      <span class="total-label">Total Amount:</span>
+      <span id="total-amount">$0.00</span>
+    </div>
     
     <div id="status"></div>
     <p id="debug-info" class="debug-info"></p>
@@ -222,12 +231,17 @@
       const buttonText = document.getElementById('button-text');
       const cardContainer = document.getElementById('card-container');
       const debugInfo = document.getElementById('debug-info');
-            
+      
+      // Log setup information
+      debugInfo.textContent = "Square SDK loading...";
+      
       if (!window.Square) {
         showError('Square payment SDK failed to load');
         return;
       }
-            
+      
+      debugInfo.textContent = "Square SDK loaded";
+      
       function showError(message) {
         statusDiv.textContent = message;
         statusDiv.classList.add('visible');
@@ -245,14 +259,19 @@
       }
       
       try {
+        debugInfo.textContent = "Initializing Square payments...";
+        // Initialize Square payments with explicit production environment
         const payments = window.Square.payments(appId, locationId, {
           environment: 'production'
         });
         
+        debugInfo.textContent = "Creating card element...";
         const card = await payments.card();
         
+        debugInfo.textContent = "Attaching card element...";
         await card.attach('#card-container');
         
+        debugInfo.textContent = "Card element ready";
         submitButton.disabled = false;
         
         const totalAmount = document.getElementById('total-amount').textContent;
@@ -270,6 +289,7 @@
         
         submitButton.addEventListener('click', async () => {
           try {
+            debugInfo.textContent = "Processing payment...";
             submitButton.disabled = true;
             spinner.style.display = 'inline-block';
             buttonText.textContent = 'Processing...';
