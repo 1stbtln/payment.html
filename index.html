@@ -181,11 +181,20 @@
       
       try {
         const payments = window.Square.payments(appId, locationId);
-        
-        // Style overrides to hide Square's default messages
+          // Style overrides to hide Square's default messages
         const styleOverrides = {
-          '.message-text': { display: 'none' },
-          '.message-icon': { display: 'none' },
+          '.message-text': {
+            fontSize: '0px',
+            lineHeight: '0px',
+            color: 'transparent',
+            margin: '0px',
+            padding: '0px'
+          },
+          '.message-icon': {
+            width: '0px',
+            height: '0px',
+            opacity: '0'
+          },
           input: {
             fontSize: '16px'
           }
