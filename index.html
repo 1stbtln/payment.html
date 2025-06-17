@@ -86,7 +86,6 @@
       <button type="button" id="sq-creditcard">Pay Now</button>
     </form>
   </div>  <script>
-    
     async function initializeCard() {
       if (!window.Square) {
         throw new Error('Square.js failed to load properly');
@@ -94,30 +93,30 @@
 
       let payments;
       try {
-        payments = window.Square.payments('sq0idp-MxctQ0AUlqhwNNx1Icvfhw', 'L5F6SQXDVKB5P');
+        payments = window.Square.payments('sandbox-sq0idb-mTIokKMK-9_wQ5U-6RMOPg', 'L5F6SQXDVKB5P');
       } catch (error) {
         console.error('Failed to initialize Square payments:', error);
         postMessage({type: 'error', message: 'Failed to initialize payment system'});
         return;
-      }      const styleOverrides = {
-        '.message-text': { display: 'none' },
-        '.message-icon': { display: 'none' },
-        input: {
-          fontSize: '16px'
-        }
-      };
+      }
 
       try {
-        const card = await payments.card({ style: styleOverrides });
+        const card = await payments.card();
         await card.attach('#sq-card-number');
         
-        const expirationDate = await payments.card({ style: styleOverrides });
+        const expirationDate = await payments.card({
+          style: {
+            input: {
+              fontSize: '16px'
+            }
+          }
+        });
         await expirationDate.attach('#sq-expiration-date');
         
-        const cvv = await payments.card({ style: styleOverrides });
+        const cvv = await payments.card();
         await cvv.attach('#sq-cvv');
         
-        const postalCode = await payments.card({ style: styleOverrides });
+        const postalCode = await payments.card();
         await postalCode.attach('#sq-postal-code');
 
         async function handlePaymentMethodSubmission(event, card) {
@@ -154,15 +153,192 @@
         console.error('Failed to initialize card:', error);
         postMessage({type: 'error', message: 'Failed to load payment form'});
       }
-    }    function postMessage(data) {
+    }
+
+    function postMessage(data) {
       if (window.ReactNativeWebView) {
         window.ReactNativeWebView.postMessage(JSON.stringify(data));
       } else {
         console.log('Message would be sent:', data);
       }
+    }    document.addEventListener('DOMContentLoaded', initializeCard);
+  </script>
+</body>
+</html>
+      font-size: 20px;
+      color: #b30000;
+      margin-left: 7px;
     }
+    
+    .button-container {
+      margin-top: auto;
+      width: 100%;
+      position: fixed;
+      bottom: 10px;
+      left: 0;
+      padding: 0 10px;
+      z-index: 100;
+    }
+      #submit-button {
+      width: 100%;
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 600;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(to right, #ff4500, #b30000);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+      #submit-button:hover {
+      opacity: 0.9;
+    }
+    
+    #submit-button:active {
+      opacity: 0.8;
+    }
+      #submit-button:disabled {
+      opacity: 0.6;
+      background: #999;
+      cursor: not-allowed;
+    }
+      #status {
+      margin-top: 10px;
+      margin-bottom: 70px;
+      padding: 10px;
+      border-radius: 6px;
+      color: #d32f2f;
+      background-color: #ffebee;
+      font-size: 14px;
+      text-align: center;
+      display: none;
+    }
+    
+    #status.visible {
+      display: block;
+    }
+    
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      margin-right: 10px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to {transform: rotate(360deg);}
+    }
+    
+    @media (max-width: 400px) {
+      #submit-button {
+        font-size: 16px;
+        padding: 14px;
+      }
+    }
+  </style>
+</head>
+<body>  <div class="container">
+    <div id="card-container" class="card-container"></div>
+    <div id="status"></div>
+  </div>
+  
+  <div class="button-container">
+    <button id="submit-button" disabled>
+      <div class="spinner" id="spinner" style="display:none;"></div>
+      <span id="button-text">Pay</span>
+    </button>
+  </div>
 
-    document.addEventListener('DOMContentLoaded', initializeCard);
+  <script>
+    async function main() {
+      const appId = 'sq0idp-MxctQ0AUlqhwNNx1Icvfhw';
+      const locationId = 'L3D90HN4FDZED';      const submitButton = document.getElementById('submit-button');
+      const statusDiv = document.getElementById('status');
+      const spinner = document.getElementById('spinner');
+      const buttonText = document.getElementById('button-text');
+      const cardContainer = document.getElementById('card-container');
+            
+      if (!window.Square) {
+        showError('Square payment SDK failed to load');
+        return;
+      }
+            
+      function showError(message) {
+        statusDiv.textContent = message;
+        statusDiv.classList.add('visible');
+        submitButton.disabled = false;
+        spinner.style.display = 'none';
+        buttonText.textContent = 'Try Again';
+        
+        // Also notify React Native about the error
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: 'error',
+            message: message
+          }));
+        }
+      }
+      
+      try {
+        const payments = window.Square.payments(appId, locationId, {
+          environment: 'production'
+        });
+        
+        const card = await payments.card();
+        
+        await card.attach('#card-container');
+        
+        submitButton.disabled = false;
+          const totalAmount = document.getElementById('total-amount')?.textContent || '$0.00';
+        buttonText.textContent = `Pay ${totalAmount}`;
+        
+        card.addEventListener('change', event => {
+          if (event.complete) {
+            cardContainer.classList.remove('invalid');
+          } else if (event.error) {
+            cardContainer.classList.add('invalid');
+          }
+        });
+        
+        submitButton.addEventListener('click', async () => {
+          try {
+            submitButton.disabled = true;
+            spinner.style.display = 'inline-block';
+            buttonText.textContent = 'Processing...';
+            statusDiv.classList.remove('visible');
+            
+            const result = await card.tokenize();
+            
+            if (result.status === 'OK') {
+              window.ReactNativeWebView?.postMessage(JSON.stringify({
+                type: 'paymentSuccess',
+                sourceId: result.token
+              }));
+            } else {
+              showError(result.errors?.[0]?.message || 'Card validation failed');
+            }
+          } catch (e) {
+            console.error('Payment error:', e);
+            debugInfo.textContent = `Payment error: ${e.message}`;
+            showError('There was a problem processing your payment');
+          }
+        });
+      } catch (e) {
+        console.error('Square initialization error:', e);
+        debugInfo.textContent = `Init error: ${e.message}`;
+        showError('Could not initialize payment system');
+      }
+    }
+    
+    main();
   </script>
 </body>
 </html>
