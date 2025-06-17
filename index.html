@@ -222,10 +222,7 @@
       const buttonText = document.getElementById('button-text');
       const cardContainer = document.getElementById('card-container');
       const debugInfo = document.getElementById('debug-info');
-      
-      // Log setup information
-      debugInfo.textContent = "Square SDK loading...";
-      
+            
       if (!window.Square) {
         showError('Square payment SDK failed to load');
         return;
