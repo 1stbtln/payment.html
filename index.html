@@ -190,8 +190,7 @@
         await card.attach('#card-container');
         
         submitButton.disabled = false;
-        const totalAmount = document.getElementById('total-amount')?.textContent || '$0.00';
-        buttonText.textContent = `Pay ${totalAmount}`;
+        buttonText.textContent = `Pay`;
         
         card.addEventListener('change', event => {
           if (event.complete) {
