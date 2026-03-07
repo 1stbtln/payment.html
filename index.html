@@ -4,18 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Payment</title>
-  <script type="text/javascript" src="https://web.squarecdn.com/v1/square.js"></script>  <style>
+  <script type="text/javascript" src="https://web.squarecdn.com/v1/square.js"></script>
+  <style>
     .sq-message-text,
     .sq-message-icon {
       display: none !important;
     }
-    
+
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
-    
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
       padding: 0;
@@ -23,115 +24,109 @@
       background: transparent;
       color: #333;
     }
-    
+
     .container {
       padding: 0;
       width: 100%;
     }
-    
+
     .card-container {
-      margin-bottom: 12px;
+      margin-bottom: 0;
     }
-    
-    .form-row {
-      margin-bottom: 12px;
-    }
-    
+
     .sq-input {
       height: 48px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
       background: white;
       font-size: 16px;
       padding: 0 12px;
       width: 100%;
     }
-    
+
     .sq-input:focus {
       border-color: #b30000;
       outline: none;
       box-shadow: 0 0 0 2px rgba(179, 0, 0, 0.1);
     }
-    
-    .card-container.invalid {
-      border-color: #d32f2f;
+
+    .card-container.invalid .sq-input,
+    .card-container.invalid .sq-input:focus {
+      border-color: #b30000;
     }
-    
+
     .button-container {
-      margin-top: auto;
       width: 100%;
-      position: fixed;
-      bottom: 10px;
-      left: 0;
-      padding: 0 10px;
-      z-index: 100;
+      margin-top: 16px;
     }
-    
+
     #submit-button {
       width: 100%;
-      padding: 16px;
+      height: 48px;
+      padding: 0 16px;
       font-size: 16px;
       font-weight: 600;
       color: white;
       border: none;
       border-radius: 8px;
-      background: linear-gradient(to right, #ff4500, #b30000);
+      background-color: #b30000;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: background-color 0.2s ease;
       display: flex;
       justify-content: center;
       align-items: center;
     }
-    
+
     #submit-button:hover {
-      opacity: 0.9;
+      background-color: #8c0000;
     }
-    
+
     #submit-button:active {
-      opacity: 0.8;
+      background-color: #8c0000;
+      opacity: 0.95;
     }
-    
+
     #submit-button:disabled {
       opacity: 0.6;
-      background: #999;
+      background-color: #999;
       cursor: not-allowed;
     }
-    
+
     #status {
-      margin-top: 10px;
-      margin-bottom: 70px;
-      padding: 10px;
-      border-radius: 6px;
-      color: #d32f2f;
-      background-color: #ffebee;
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(179, 0, 0, 0.25);
+      color: #b30000;
+      background-color: #fff5f5;
       font-size: 14px;
       text-align: center;
       display: none;
     }
-    
+
     #status.visible {
       display: block;
     }
-    
+
     .spinner {
       display: inline-block;
       width: 20px;
       height: 20px;
       margin-right: 10px;
-      border: 3px solid rgba(255,255,255,0.3);
+      border: 3px solid rgba(255, 255, 255, 0.3);
       border-radius: 50%;
       border-top-color: white;
       animation: spin 1s linear infinite;
     }
-    
+
     @keyframes spin {
-      to {transform: rotate(360deg);}
+      to { transform: rotate(360deg); }
     }
-    
+
     @media (max-width: 400px) {
       #submit-button {
-        font-size: 16px;
-        padding: 14px;
+        font-size: 15px;
+        height: 48px;
       }
     }
   </style>
@@ -139,42 +134,40 @@
 <body>
   <div class="container">
     <div id="card-container" class="card-container"></div>
+    <div class="button-container">
+      <button type="button" id="submit-button" disabled>
+        <div class="spinner" id="spinner" style="display: none;"></div>
+        <span id="button-text">Pay</span>
+      </button>
+    </div>
     <div id="status"></div>
-  </div>
-  
-  <div class="button-container">
-    <button id="submit-button" disabled>
-      <div class="spinner" id="spinner" style="display:none;"></div>
-      <span id="button-text">Pay</span>
-    </button>
   </div>
 
   <script>
     async function main() {
       const appId = 'sq0idp-MxctQ0AUlqhwNNx1Icvfhw';
       const locationId = 'L3D90HN4FDZED';
-      
+
       const submitButton = document.getElementById('submit-button');
       const statusDiv = document.getElementById('status');
       const spinner = document.getElementById('spinner');
       const buttonText = document.getElementById('button-text');
       const cardContainer = document.getElementById('card-container');
-      
+
       console.log('Initializing Square.payments with', appId, locationId);
-      
+
       if (!window.Square) {
         showError('Square payment SDK failed to load');
         return;
       }
-      
+
       function showError(message) {
         statusDiv.textContent = message;
         statusDiv.classList.add('visible');
         submitButton.disabled = false;
         spinner.style.display = 'none';
         buttonText.textContent = 'Try Again';
-        
-        // Also notify React Native about the error
+
         if (window.ReactNativeWebView) {
           window.ReactNativeWebView.postMessage(JSON.stringify({
             type: 'error',
@@ -182,33 +175,32 @@
           }));
         }
       }
-        try {
+
+      try {
         const payments = window.Square.payments(appId, locationId);
-        
         const card = await payments.card();
-        
         await card.attach('#card-container');
-        
+
         submitButton.disabled = false;
-        buttonText.textContent = `Pay`;
-        
-        card.addEventListener('change', event => {
+        buttonText.textContent = 'Pay';
+
+        card.addEventListener('change', function (event) {
           if (event.complete) {
             cardContainer.classList.remove('invalid');
           } else if (event.error) {
             cardContainer.classList.add('invalid');
           }
         });
-        
-        submitButton.addEventListener('click', async () => {
+
+        submitButton.addEventListener('click', async function () {
           try {
             submitButton.disabled = true;
             spinner.style.display = 'inline-block';
             buttonText.textContent = 'Processing...';
             statusDiv.classList.remove('visible');
-            
+
             const result = await card.tokenize();
-            
+
             if (result.status === 'OK') {
               window.ReactNativeWebView?.postMessage(JSON.stringify({
                 type: 'paymentSuccess',
@@ -222,20 +214,16 @@
             showError('There was a problem processing your payment');
           }
         });
-        
-        // Notify React Native that the payment form is ready
+
         if (window.ReactNativeWebView) {
-          window.ReactNativeWebView.postMessage(JSON.stringify({
-            type: 'loaded'
-          }));
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'loaded' }));
         }
-        
       } catch (e) {
         console.error('Square initialization error:', e);
         showError('Could not initialize payment system');
       }
     }
-    
+
     document.addEventListener('DOMContentLoaded', main);
   </script>
 </body>
