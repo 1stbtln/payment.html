@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -58,6 +59,21 @@
     .button-container {
       width: 100%;
       margin-top: 16px;
+    }
+
+    .save-card-row {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #555;
+      font-size: 13px;
+    }
+
+    .save-card-row input {
+      width: 16px;
+      height: 16px;
+      accent-color: #b30000;
     }
 
     #submit-button {
@@ -120,7 +136,9 @@
     }
 
     @keyframes spin {
-      to { transform: rotate(360deg); }
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     @media (max-width: 400px) {
@@ -131,9 +149,14 @@
     }
   </style>
 </head>
+
 <body>
   <div class="container">
     <div id="card-container" class="card-container"></div>
+    <label class="save-card-row">
+      <input type="checkbox" id="save-card-checkbox" />
+      <span>Save this card for next time</span>
+    </label>
     <div class="button-container">
       <button type="button" id="submit-button" disabled>
         <div class="spinner" id="spinner" style="display: none;"></div>
@@ -153,6 +176,7 @@
       const spinner = document.getElementById('spinner');
       const buttonText = document.getElementById('button-text');
       const cardContainer = document.getElementById('card-container');
+      const saveCardCheckbox = document.getElementById('save-card-checkbox');
 
       console.log('Initializing Square.payments with', appId, locationId);
 
@@ -204,7 +228,8 @@
             if (result.status === 'OK') {
               window.ReactNativeWebView?.postMessage(JSON.stringify({
                 type: 'paymentSuccess',
-                sourceId: result.token
+                sourceId: result.token,
+                saveCardForFuture: !!saveCardCheckbox?.checked
               }));
             } else {
               showError(result.errors?.[0]?.message || 'Card validation failed');
@@ -227,4 +252,5 @@
     document.addEventListener('DOMContentLoaded', main);
   </script>
 </body>
+
 </html>
